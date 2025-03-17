@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  concentrador:
+    build: ./concentrador
+    ports:
+      - "8000:8000"
+    environment:
+      - API_KEY=secret123
+      - DATABASE_URL=sqlite:///datos.db
+    depends_on:
+      - sqlite
+    networks:
+      - parque_eolico
+
+  generador:
+    build: ./generador
+    environment:
+      - API_KEY=secret123
+      - CONCENTRADOR_URL=http://concentrador:8000/medidas
+    depends_on:
+      - concentrador
+    networks:
+      - parque_eolico
+
+  sqlite:
+    image: nouchka/sqlite3
+    volumes:
+      - sqlite_data:/data
+    networks:
+      - parque_eolico
+
+volumes:
+  sqlite_data:
+
+networks:
+  parque_eolico:
+    driver: bridge
