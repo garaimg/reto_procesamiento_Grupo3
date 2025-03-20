@@ -1,38 +1,78 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - windpark_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  postgres_init:
+    image: postgres:15-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGHOST=postgres
+    networks:
+      - windpark_network
+    command: >
+      sh -c "
+        psql -c 'CREATE DATABASE windpark_db;' &&
+        psql -c \"CREATE USER windpark WITH PASSWORD 'windpark_password';\" &&
+        psql -c 'GRANT ALL PRIVILEGES ON DATABASE windpark_db TO windpark;' &&
+        psql -d windpark_db -c 'GRANT ALL ON SCHEMA public TO windpark;'
+      "
+
   concentrador:
-    build: ./concentrador
+    build:
+      context: ./concentrador
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
       - API_KEY=secret123
-      - DATABASE_URL=sqlite:///datos.db
+      - DATABASE_URL=postgresql://windpark:windpark_password@postgres:5432/windpark_db
     depends_on:
-      - sqlite
+      postgres_init:
+        condition: service_completed_successfully
     networks:
-      - parque_eolico
+      - windpark_network
+    restart: always
 
   generador:
-    build: ./generador
+    build:
+      context: ./generador
+      dockerfile: Dockerfile
     environment:
       - API_KEY=secret123
       - CONCENTRADOR_URL=http://concentrador:8000/medidas
     depends_on:
       - concentrador
     networks:
-      - parque_eolico
-
-  sqlite:
-    image: nouchka/sqlite3
-    volumes:
-      - sqlite_data:/data
-    networks:
-      - parque_eolico
+      - windpark_network
+    restart: always
+    deploy:
+      replicas: 3
 
 volumes:
-  sqlite_data:
+  postgres_data:
 
 networks:
-  parque_eolico:
+  windpark_network:
     driver: bridge
