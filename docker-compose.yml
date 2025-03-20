@@ -33,11 +33,18 @@ services:
       - windpark_network
     command: >
       sh -c "
-        psql -c 'CREATE DATABASE windpark_db;' &&
-        psql -c \"CREATE USER windpark WITH PASSWORD 'windpark_password';\" &&
-        psql -c 'GRANT ALL PRIVILEGES ON DATABASE windpark_db TO windpark;' &&
-        psql -d windpark_db -c 'GRANT ALL ON SCHEMA public TO windpark;'
+        if ! psql -tAc \"SELECT 1 FROM pg_database WHERE datname='windpark_db'\" | grep -q 1; then
+          echo 'Creating database and user...'
+          psql -c 'CREATE DATABASE windpark_db;'
+          psql -c \"CREATE USER windpark WITH PASSWORD 'windpark_password';\"
+          psql -c 'GRANT ALL PRIVILEGES ON DATABASE windpark_db TO windpark;'
+          psql -d windpark_db -c 'GRANT ALL ON SCHEMA public TO windpark;'
+        else
+          echo 'Database already exists. Skipping creation.'
+        fi
       "
+
+
 
   concentrador:
     build:
