@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Configuración de la base de datos PostgreSQL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://windpark:windpark_password@postgres:5432/windpark_db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
@@ -35,7 +35,7 @@ class MedidaData(BaseModel):
     temperature: float = Field(..., ge=-10, le=40)
     timestamp: datetime
 
-API_KEY = os.getenv("API_KEY", "secret123")
+API_KEY = os.getenv("API_KEY")
 def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
