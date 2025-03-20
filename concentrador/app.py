@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field
 from datetime import datetime
 import os
-import time
 from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -24,7 +23,7 @@ class Medida(Base):
     temperature = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-# Asegúrate de que las tablas existan
+# Crea la tabla en la base de datos si no existe
 Base.metadata.create_all(bind=engine)
 
 # Modelo Pydantic con validación: solo se aceptan valores correctos
