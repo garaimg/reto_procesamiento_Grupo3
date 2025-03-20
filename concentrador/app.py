@@ -10,29 +10,7 @@ from sqlalchemy.orm import sessionmaker
 # Configuración de la base de datos PostgreSQL
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://windpark:windpark_password@postgres:5432/windpark_db")
 
-# Función para intentar conectar a la base de datos con reintentos
-def get_engine(max_retries=10, retry_interval=5):
-    retries = 0
-    while retries < max_retries:
-        try:
-            print(f"Intentando conectar a la base de datos: {DATABASE_URL}")
-            engine = create_engine(DATABASE_URL)
-            # Intenta ejecutar una consulta simple para verificar la conexión
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            print("Conexión a la base de datos establecida correctamente")
-            return engine
-        except Exception as e:
-            retries += 1
-            print(f"Error al conectar a la base de datos (intento {retries}/{max_retries}): {e}")
-            if retries < max_retries:
-                print(f"Reintentando en {retry_interval} segundos...")
-                time.sleep(retry_interval)
-            else:
-                print("No se pudo conectar a la base de datos después de varios intentos")
-                raise
-
-engine = get_engine()
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 

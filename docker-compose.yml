@@ -68,7 +68,7 @@ services:
       - windpark_network
     restart: always
     deploy:
-      replicas: 3
+      replicas: 10
 
 volumes:
   postgres_data:
