@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field
 from datetime import datetime
 import os
+from zoneinfo import ZoneInfo  # Para manejar la zona horaria de Madrid
 from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -21,7 +22,7 @@ class Medida(Base):
     wind_direction = Column(Float)
     rotor_speed = Column(Float)
     temperature = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow)  # Se almacena en UTC
 
 # Crea la tabla en la base de datos si no existe
 Base.metadata.create_all(bind=engine)
@@ -63,17 +64,22 @@ def get_agregados_minuto():
       - Promedio
       - Máximo (con el generador que lo produjo)
       - Mínimo (con el generador que lo produjo)
+
+    Los resultados se ordenan de más reciente a más antiguo y el timestamp se convierte a la hora de Madrid.
     """
     db = SessionLocal()
     try:
-        # Ajuste para PostgreSQL: formato de fecha distinto
+        # Se obtiene cada minuto (agrupado) y se ordena de forma descendente
         minutes = db.query(func.date_trunc('minute', Medida.timestamp).label("minute"))\
-                    .group_by(text("minute")).all()
+                    .group_by(text("minute"))\
+                    .order_by(text("minute DESC"))\
+                    .all()
         metrics = ['wind_speed', 'wind_direction', 'rotor_speed', 'temperature']
         results = []
         for m in minutes:
-            minute = m.minute.isoformat()
-            data = {"minute": minute}
+            # Convertir el minuto a la zona horaria de Madrid
+            minute_madrid = m.minute.astimezone(ZoneInfo("Europe/Madrid")).isoformat()
+            data = {"minute": minute_madrid}
             for metric in metrics:
                 avg_value = db.query(func.avg(getattr(Medida, metric)))\
                               .filter(func.date_trunc('minute', Medida.timestamp) == m.minute)\
@@ -111,9 +117,14 @@ def list_generators():
 def get_generator_data(generator_id: str):
     db = SessionLocal()
     try:
-        medidas = db.query(Medida).filter(Medida.generator_id == generator_id).all()
+        # Se ordenan los datos del generador de más reciente a más antiguo
+        medidas = db.query(Medida)\
+                     .filter(Medida.generator_id == generator_id)\
+                     .order_by(Medida.timestamp.desc())\
+                     .all()
         if not medidas:
             raise HTTPException(status_code=404, detail="Generador no encontrado")
+        madrid_tz = ZoneInfo("Europe/Madrid")
         return {
             "generator_id": generator_id,
             "data": [
@@ -123,7 +134,8 @@ def get_generator_data(generator_id: str):
                     "wind_direction": m.wind_direction,
                     "rotor_speed": m.rotor_speed,
                     "temperature": m.temperature,
-                    "timestamp": m.timestamp.isoformat()
+                    # Convertir el timestamp a la hora de Madrid
+                    "timestamp": m.timestamp.astimezone(madrid_tz).isoformat()
                 } for m in medidas
             ]
         }
