@@ -139,18 +139,24 @@ Este proyecto implementa un modelo de datos para un parque eólico compuesto por
 
 ## Alternativas Posibles
 
-- **Modularización del Código:**
-  - Se podría mejorar la estructura del código para que sea más modular y reutilizable.
+## 1. Base de Datos Especializada en Series Temporales
+- En vez de **PostgreSQL**, usar una base optimizada para series temporales como:
+  - **InfluxDB** (rápido para datos de IoT y monitoreo).
+  - **TimescaleDB** (extensión de PostgreSQL optimizada para series temporales).
+  - **MongoDB con Time-Series Collections** (para datos estructurados y no estructurados).
 
-- **Persistencia Avanzada:**
-  - Evaluar el uso de bases de datos **InfluxDB** o **TimescaleDB** para almacenamiento eficiente de series temporales.
+## 2. Comunicación Alternativa Entre Generadores y Concentrador
+- En lugar de una API para enviar datos, se pueden usar:
+  - **MQTT** (protocolo ligero y eficiente para IoT).
+  - **Apache Kafka o RabbitMQ** (gestión avanzada de eventos y streaming de datos).
+  - **gRPC** (comunicación más rápida y eficiente que REST).
 
-- **Seguridad Adicional:**
-  - Implementar autenticación con **OAuth 2.0** o **JWT** en lugar de API-Keys.
-
-- **Monitoreo y Logging:**
-  - Integrar herramientas como **Prometheus y Grafana** para visualizar métricas en tiempo real.
-  - Configurar un sistema de logging centralizado con **ELK Stack (Elasticsearch, Logstash, Kibana)** o **Loki**.
+## 3. Orquestación con Kubernetes
+- Usar **Kubernetes** en lugar de Docker Compose para mejor escalabilidad.
+- **Ventajas:**
+  - Balanceo de carga automático.
+  - Recuperación automática de fallos.
+  - Escalado dinámico según la demanda.
 
 ---
 
